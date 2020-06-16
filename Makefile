@@ -146,6 +146,9 @@ $(DYNAMICCLIB): $(CUFINUFFTCOBJS) $(STATICLIB)
 	mkdir -p lib
 	gcc -shared -o $(DYNAMICCLIB) $(CUFINUFFTCOBJS) $(STATICLIB) $(NVCC_LIBS_PATH) $(LIBS)
 
+python:
+	pip install .
+
 clean:
 	rm -f *.o
 	rm -f test/*.o
@@ -163,3 +166,4 @@ clean:
 .PHONY: clean
 .PHONY: clib
 .PHONY: lib
+.PHONY: python
