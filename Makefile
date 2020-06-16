@@ -264,6 +264,9 @@ check3D_32: all
 
 # Cleanup and phony targets
 
+python:
+	pip install .
+
 clean:
 	rm -f *.o
 	rm -f test/*.o
@@ -286,3 +289,4 @@ clean:
 .PHONY: clean
 .PHONY: clib
 .PHONY: lib
+.PHONY: python
