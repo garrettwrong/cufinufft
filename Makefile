@@ -6,8 +6,8 @@ NVCC=nvcc
 #   http://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
 #NVARCH = -arch=sm_70
 CFLAGS= -fPIC -O3 -funroll-loops -march=native -g
-CXXFLAGS= $(CFLAGS) -std=c++11
-NVCCFLAGS= -std=c++11 -ccbin=$(CXX) -O3 $(NVARCH) \
+CXXFLAGS= $(CFLAGS) -std=c++14
+NVCCFLAGS= -std=c++14 -ccbin=$(CXX) -O3 $(NVARCH) \
 	--default-stream per-thread -Xcompiler "$(CXXFLAGS)"
 #DEBUG add "-g -G" for cuda-gdb debugger
 #NVCCFLAGS=-DINFO -DDEBUG -DRESULT -DTIME
@@ -38,7 +38,7 @@ STATICLIB=lib-static/$(LIBNAME).a
 CLIBNAME=libcufinufftc
 DYNAMICCLIB=lib/$(CLIBNAME).so
 
-BINDIR=./bin
+BINDIR=bin
 
 HEADERS = include/cufinufft.h src/cudeconvolve.h src/memtransfer.h include/profile.h \
 	src/cuspreadinterp.h include/cufinufft_eitherprec.h include/cufinufft_errors.h
@@ -56,22 +56,24 @@ CUFINUFFTOBJS_64=src/2d/spreadinterp2d.o src/2d/cufinufft2d.o \
 	src/3d/interp3d_wrapper.o src/3d/cufinufft3d.o \
 	$(CONTRIBOBJS)
 CUFINUFFTOBJS_32=$(CUFINUFFTOBJS_64:%.o=%_32.o)
+$(info $$CUFINUFFTOBJS_32 is [${CUFINUFFTOBJS_32}])
+
 
 CUFINUFFTCOBJS_64=src/cufinufftc.o
 CUFINUFFTCOBJS_32=$(CUFINUFFTCOBJS_64:%.o=%_32.o)
 
-%.o: %.cpp $(HEADERS)
-	$(CXX) -c $(CXXFLAGS) $(INC) $< -o $@
-%.o: %.c $(HEADERS)
-	$(CC) -c $(CFLAGS) $(INC) $< -o $@
-%.o: %.cu $(HEADERS)
-	$(NVCC) --device-c -c $(NVCCFLAGS) $(INC) $< -o $@
 %_32.o: %.cpp $(HEADERS)
 	$(CXX) -DSINGLE -c $(CXXFLAGS) $(INC) $< -o $@
 %_32.o: %.c $(HEADERS)
 	$(CC) -DSINGLE -c $(CFLAGS) $(INC) $< -o $@
 %_32.o: %.cu $(HEADERS)
 	$(NVCC) -DSINGLE --device-c -c $(NVCCFLAGS) $(INC) $< -o $@
+%.o: %.cpp $(HEADERS)
+	$(CXX) -c $(CXXFLAGS) $(INC) $< -o $@
+%.o: %.c $(HEADERS)
+	$(CC) -c $(CFLAGS) $(INC) $< -o $@
+%.o: %.cu $(HEADERS)
+	$(NVCC) --device-c -c $(NVCCFLAGS) $(INC) $< -o $@
 
 
 all: $(BINDIR)/spread2d \
@@ -111,17 +113,17 @@ $(BINDIR)/interp3d: test/interp_3d.o $(CUFINUFFTOBJS_64) $(CUFINUFFTOBJS)
 	mkdir -p $(BINDIR)
 	$(NVCC) $(NVCCFLAGS) $(LIBS) -o $@ $^
 
-$(BINDIR)/%: test/%.o $(CUFINUFFTOBJS_64) $(CUFINUFFTOBJS)
+$(BINDIR)/cufinufft2d2api_test%: test/cufinufft2d2api_test%.o $(DYNAMICLIB)
 	mkdir -p $(BINDIR)
-	$(NVCC) $^ $(NVCCFLAGS) $(NVCC_LIBS_PATH) $(LIBS) -o $@
+	$(NVCC) $(NVCCFLAGS) $(LIBS) -o $@ $< $(DYNAMICLIB)
 
 $(BINDIR)/%_32: test/%_32.o $(CUFINUFFTOBJS_32) $(CUFINUFFTOBJS)
 	mkdir -p $(BINDIR)
 	$(NVCC) -DSINGLE $^ $(NVCCFLAGS) $(NVCC_LIBS_PATH) $(LIBS) -o $@
 
-$(BINDIR)/cufinufft2d2api_test%: test/cufinufft2d2api_test%.o $(DYNAMICLIB)
+$(BINDIR)/%: test/%.o $(CUFINUFFTOBJS_64) $(CUFINUFFTOBJS)
 	mkdir -p $(BINDIR)
-	$(NVCC) $(NVCCFLAGS) $(LIBS) -o $@ $< $(DYNAMICLIB)
+	$(NVCC) $^ $(NVCCFLAGS) $(NVCC_LIBS_PATH) $(LIBS) -o $@
 
 
 lib: $(STATICLIB) $(DYNAMICLIB)
